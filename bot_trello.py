@@ -14,7 +14,7 @@ from difflib import get_close_matches
 # pip freeze > requirements.txt
 # virtualenv venv
 # source venv/bin/activate
-# python -m pip -r install requirements.txt
+# pip install -r requirements.txt
 
 # ----------------------------- SETUP VARIABLES GLOBALES ET BOT
 print("start loading")
