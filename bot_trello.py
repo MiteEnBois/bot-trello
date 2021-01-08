@@ -184,7 +184,8 @@ def partie_to_embed(id, partie, color):
             mj += partie["mj"]
     else:
         mj += board_master.users[partie["mj"]]["username"]
-
+    if "date" in partie:
+        mj = ''
     embed = discord.Embed(title=partie["titre"], description=mj, color=color)
     footer = ""
     if partie["label"] != "":
