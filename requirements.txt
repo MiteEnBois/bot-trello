@@ -1,0 +1,4 @@
+discord.py==1.5.1
+py-trello==0.17.1
+python-dotenv==0.10.5
+PyYAML==5.3
