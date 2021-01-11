@@ -134,3 +134,4 @@ dmypy.json
 # Pyre type checker
 .pyre/
 bot-astro-debug.py
+bot_trello_dev.py

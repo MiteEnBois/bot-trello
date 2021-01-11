@@ -88,13 +88,13 @@ def maj_master():
 def maj_board():
     """Met a jour la board
 
-    Compare d'abords les users présent dans la base de donnée et ceux présent sur la board trello, rajoute dans la base de donnée si ils n'y sont pas déjà présent, 
+    Compare d'abords les users présent dans la base de donnée et ceux présent sur la board trello, rajoute dans la base de donnée si ils n'y sont pas déjà présent,
     et les enleves de la base de donnée si ils se sont retiré de la board
 
     Tente ensuite de rajouter toute les cartes de la board trello; si elle est déjà présente, passe cette étape
     Enlève les parties de la base de données si elles ne sont plus sur la board trello
     """
-    changes = {"added": [], "removed": []}
+    changes = {"added": [], "removed": [], "modified": []}
     cards = []
     present_users = board_master.users.copy()
     all_members = orga.all_members().copy()
@@ -120,7 +120,7 @@ def maj_board():
     if len(all_members) > 0:
         for m in all_members:
             board_master.users[m.id+"-trello"] = {'mj': None, "trello": m.id, "username": m.username}
-            board_master.trello_id[m.id] = m.username
+            board_master.trello_id[m.id] = m.id+"-trello"
             changes["added"].append(m.username)
     for x in board_master.prevues:
         cards.append(x)
@@ -129,7 +129,64 @@ def maj_board():
 
     for card in orga.visible_cards():
         if card.id in cards:
+            mod = ""
             cards.remove(card.id)
+            partie = board_master.get_partie(card.id)
+            if partie['titre'] != card.name:
+                mod += "titre, "
+                partie['titre'] = card.name
+            if partie['description'] != card.description:
+                mod += "description, "
+                partie['description'] = card.description
+            label = ""
+            for l in card.idLabels:
+                label += dictLabels[l]+", "
+            if len(label) > 0 and label[-2] == ",":
+                label = label[:-2]
+            if partie['label'] != label:
+                mod += "label, "
+                partie['label'] = label
+            if partie['mj'] == "" and "(MJ)" in card.get_list().name:
+                mod += "mj, "
+                partie["mj"] = card.get_list().replace("(MJ) ", "")
+            if ('date' in partie and partie['date'] != "" and card.due_date != "" and partie['date'] != card.due_date) or ('date' not in partie and card.due_date != ""):
+                mod += f'add date : {card.due_date}, '
+                partie["date"] = card.due_date
+            if 'date' in partie and card.due_date == "":
+                mod += "rem date, "
+                partie.pop('date', None)
+            joueurs_cards = []
+            for j in card.idMembers:
+                joueurs_cards.append(board_master.trello_id[j])
+            joueur_partie = partie["joueurs"].copy()
+            for j in joueurs_cards.copy():
+                if j in joueur_partie:
+                    joueurs_cards.remove(j)
+                    joueur_partie.remove(j)
+            if len(joueur_partie) > 0:
+                mod += "rem joueurs, "
+                for j in joueur_partie:
+                    partie["joueurs"].remove(j)
+            if len(joueurs_cards) > 0:
+                mod += "add joueurs, "
+                for j in joueurs_cards:
+                    partie["joueurs"].append(j)
+            if card.id in board_master.parties:
+                if 'date' in partie and partie['date'] != "":
+                    mod += "partie to prevue, "
+                    board_master.parties.pop(card.id, None)
+                    board_master.prevues[card.id] = partie
+                elif len(mod) > 0:
+                    board_master.parties[card.id] = partie
+            if card.id in board_master.prevues:
+                if 'date' not in partie:
+                    mod += "prevue to partie, "
+                    board_master.prevues.pop(card.id, None)
+                    board_master.parties[card.id] = partie
+                elif len(mod) > 0:
+                    board_master.prevues[card.id] = partie
+            if len(mod) > 0:
+                changes["modified"].append(f"{card.name} : {mod[:-2]}")
             continue
 
         print(card.name)
@@ -147,20 +204,17 @@ def maj_board():
              }
         joueurs = []
         for id in card.idMembers:
-            for u in board_master.users:
-                if p["mj"] != "" and u in board_master.mjs:
-                    p["mj"] = u
-                if board_master.users[u]["trello"] == id:
-                    joueurs.append(u)
-            p["mj"] = id
+            joueurs.append(board_master.trello_id[id])
         p["joueurs"] = joueurs
-        if "(MJ)" in card.get_list().name:
-            if p["mj"] == "":
-                p["mj"] = card.get_list().replace("(MJ) ", "")
-            board_master.parties[card.id] = p
-        else:
+        if card.due_date != '':
             p["date"] = card.due_date
             board_master.prevues[card.id] = p
+        else:
+            list = card.get_list().name
+            if "(MJ)" in list and list.replace("(MJ) ", "") in board_master.mjs:
+                p["mj"] = board_master.mjs[list.replace("(MJ) ", "")]
+            board_master.parties[card.id] = p
+
     if len(cards) != 0:
         print(cards)
         for c in cards:
@@ -197,27 +251,35 @@ def partie_to_embed(id, partie, color):
     if partie["systeme"] != '':
         embed.add_field(name="Système", value=partie["systeme"], inline=False)
     joueurs = ""
+
     for j in partie["joueurs"]:
         if j != partie["mj"]:
             joueurs += f'{board_master.users[j]["username"]}, '
     embed.add_field(name="Joueurs", value=joueurs[:-2], inline=False)
+
     if "date" in partie:
-        date = partie["date"]
-        delta = date.replace(tzinfo=None) - datetime.utcnow()
-        titre = f"{date.strftime('%d/%m/%Y')} "
-        if delta.days < 0:
-            titre += "(Date dépassée)"
-        elif delta.days == 0:
-            titre += "(Prévue pour aujourd'hui"
-            if delta.seconds >= 3600:
-                titre += f" dans {math.floor(delta.seconds/3600)}h)"
-            else:
-                titre += f" dans {math.floor(delta.seconds/60)}m)"
-        elif delta.days == 1:
-            titre += f"(Prévue pour demain)"
+        if partie["date"] is None or partie["date"] == "":
+            embed.add_field(name="Date", value="Pas validée", inline=False)
         else:
-            titre += f"(Prévue pour dans {delta.days} jours)"
-        embed.add_field(name="Date", value=titre, inline=False)
+            if isinstance(partie["date"], str):
+                date = datetime.fromisoformat(partie["date"])
+            else:
+                date = partie["date"]
+            delta = date.replace(tzinfo=None) - datetime.utcnow()
+            titre = f"{date.strftime('%d/%m/%Y')} "
+            if delta.days < 0:
+                titre += "(Date dépassée)"
+            elif delta.days == 0:
+                titre += "(Prévue pour aujourd'hui"
+                if delta.seconds >= 3600:
+                    titre += f" dans {math.floor(delta.seconds/3600)}h)"
+                else:
+                    titre += f" dans {math.floor(delta.seconds/60)}m)"
+            elif delta.days == 1:
+                titre += f"(Prévue pour demain)"
+            else:
+                titre += f"(Prévue pour dans {delta.days} jours)"
+            embed.add_field(name="Date", value=titre, inline=False)
     return embed
 
 
@@ -323,23 +385,12 @@ async def liste(ctx, id=''):
         print("erreur : id pas trouvée")
         await ctx.send("Vous n'êtes pas présent sur trello, ou vous n'avez pas été lié à votre compte discord. Utilisez t!linktrello")
         return
+    txt = f"__**Parties de {board_master.users[discord_id]['username']}:**__\n"
     for id, p in board_master.parties.items():
         if discord_id in p["joueurs"]:
-            await ctx.send(embed=partie_to_embed(id, p, 0xf48f01))
+            txt += f"**{p['titre']}**, par {board_master.users[p['mj']]['username']}\n"
+    await ctx.send(txt)
 
-help = """Affiche un combo des commandes liste et prevu
-        Rajoutez une mention ou un id pour spécifier une personne autre que vous"""
-
-
-@bot.command(name='resume', help=help)
-async def resume(ctx, id=''):
-    discord_id = trouve_discord_id(ctx, id)
-    for id, p in board_master.parties.items():
-        if discord_id in p["joueurs"]:
-            await ctx.send(embed=partie_to_embed(id, p, 0xf48f01))
-    for id, p in board_master.prevues.items():
-        if discord_id in p["joueurs"]:
-            await ctx.send(embed=partie_to_embed(id, p, 0x00750e))
 
 help = """Permet de changer le pseudo qu'utilise le bot pour parler de vous"""
 
@@ -356,7 +407,6 @@ async def pseudo(ctx, *arr):
     board_master.users[discord_id]["username"] = new
     if not await confirmation(ctx, f"Vous vous appretez à changer votre username de {old} à {new}, souhaitez-vous continuer?", "Oui"):
         return
-    board_master.trello_id[board_master.users[discord_id]["trello"]] = new
     maj_master()
     await ctx.send(f"Username changé de {old} à {new}")
 
@@ -421,6 +471,11 @@ async def maj(ctx):
         for a in changes["removed"]:
             txt += a+", "
         txt = txt[:-2]
+        if changes["modified"] != []:
+            txt += "Modifiés:\n"
+        for a in changes["modified"]:
+            txt += a+", "
+        txt = txt[:-2]
     if txt == "**Update effectuée :**\n":
         txt += "Pas de changements"
     await ctx.send(txt)
@@ -465,6 +520,16 @@ async def linktrello(ctx, trello_id="", discord_id=0):
             return
         board_master.users[discord_id] = board_master.users[trello_id].copy()
         board_master.users.pop(trello_id, None)
+        board_master.trello_id[trello_id] = discord_id
+        for id, p in board_master.parties.items():
+            if trello_id in p["joueurs"]:
+                p["joueurs"].remove(trello_id)
+                p["joueurs"].append(discord_id)
+        for id, p in board_master.prevues.items():
+            if trello_id in p["joueurs"]:
+                p["joueurs"].remove(trello_id)
+                p["joueurs"].append(discord_id)
+
         await ctx.send(f"Lien confirmé ({board_master.usertostr(discord_id)})")
         maj_master()
 # ----------------------------- FIN SETUP
@@ -488,7 +553,6 @@ async def on_ready():
     for guild in bot.guilds:
         print(f'-{guild.name}')
     print(f'{bot.user} has started')
-
 
 # lance le bot
 bot.run(TOKEN)
