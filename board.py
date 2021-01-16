@@ -87,3 +87,8 @@ class board:
         if id not in self.users:
             return None
         return f"{id} : **{self.users[id]['username']}**; nom de mj : {self.users[id]['mj']}; id trello : {self.users[id]['trello']}"
+
+    def sort(self):
+        self.parties = {k: v for k, v in sorted(self.parties.items(), key=lambda x: x[1]["titre"])}
+        # self.prevues = master["prevues"].sort(key=lambda x: x["date"].replace(tzinfo=None) - datetime.utcnow())
+        self.prevues = {k: v for k, v in sorted(self.prevues.items(), key=lambda x: x[1]["date"].replace(tzinfo=None) - datetime.utcnow())}

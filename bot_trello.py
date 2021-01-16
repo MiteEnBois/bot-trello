@@ -225,6 +225,7 @@ def maj_board():
                 changes["removed"].append(board_master.prevues[c]["titre"])
                 board_master.prevues.pop(c, None)
 
+    board_master.sort()
     maj_master()
     return changes
 
