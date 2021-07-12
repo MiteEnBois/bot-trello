@@ -306,7 +306,7 @@ def trouve_discord_id(ctx, id):
         try:
             discord_id = int(id)
         except ValueError:
-            discord_id = ctx.message.mentions[0].id
+            discord_id = int(id[3:-1])
     return discord_id
 
 
