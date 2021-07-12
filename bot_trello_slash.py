@@ -82,7 +82,13 @@ async def confirmation(ctx, message, confirmation):
 
 
 def genrer(gstring, goptions):
-    return "lol"
+    txt = ""
+    for l in gstring:
+        if l not in goptions:
+            txt += l
+        else:
+            txt += goptions[l]
+    return txt
 
 
 def maj_master():
@@ -444,7 +450,7 @@ async def joueur(ctx, id=''):
         print("erreur : id pas trouvée")
         await ctx.send("Vous n'êtes pas présent sur trello, ou vous n'avez pas été lié à votre compte discord. Utilisez t!linktrello")
         return
-    txt = f"__**Parties de {board_master.users[discord_id]['username']} en tant que joueur/joueuse:**__\n"
+    txt = f"__**Parties de {board_master.users[discord_id]['username']} en tant que {genrer(board_master.users[discord_id]['genre'],{'m': 'joueur', 'f': 'joueuse', 'n': 'joueu'})}:**__\n"
     for id, p in board_master.parties.items():
         if discord_id in p["joueurs"] and discord_id != p["mj"]:
             txt += f"**{p['titre']}**, par {board_master.users[p['mj']]['username']}\n"
