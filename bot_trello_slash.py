@@ -81,6 +81,10 @@ async def confirmation(ctx, message, confirmation):
         return False
 
 
+def genrer(gstring, goptions):
+    return "lol"
+
+
 def maj_master():
     """Sauvegarde la base de donnée en mémoire vers un fichier"""
     with open("master.yml", mode="w+", encoding='utf-8') as f:
