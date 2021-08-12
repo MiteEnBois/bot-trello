@@ -578,11 +578,11 @@ async def pingjoueurs(ctx, id):
     await ctx.send(msg[:-2])
 
 
-@bot.command(name='maj', help="""Met à jour les données""")
 @slash.slash(name="maj",
              description="Met à jour les données",
 
              guild_ids=guild_ids)
+@bot.command(name='maj', help="""Met à jour les données""")
 # @bot.command(name='maj', help=help)
 async def maj(ctx):
     changes = maj_board()
