@@ -402,9 +402,13 @@ async def prevu(ctx, id=''):
         print("erreur : id pas trouvée")
         await ctx.send("Vous n'êtes pas présent sur trello, ou vous n'avez pas été lié à votre compte discord. Utilisez t!linktrello")
         return
+    i = True
     for id, p in board_master.prevues.items():
         if discord_id in p["joueurs"]:
             await ctx.send(embed=partie_to_embed(id, p, 0x00750e))
+            i = False
+    if i:
+        await ctx.send("eh ben va tfair foutre")
 
 
 @slash.slash(name="liste",
@@ -428,7 +432,10 @@ async def liste(ctx, id=''):
     txt = f"__**Parties de {board_master.users[discord_id]['username']}:**__\n"
     for id, p in board_master.parties.items():
         if discord_id in p["joueurs"]:
-            txt += f"**{p['titre']}**, par {board_master.users[p['mj']]['username']}\n"
+            if p['mj'] == "":
+                txt += f"**{p['titre']}**, par ???\n"
+            else:
+                txt += f"**{p['titre']}**, par {board_master.users[p['mj']]['username']}\n"
     await ctx.send(txt)
 
 
@@ -453,7 +460,10 @@ async def joueur(ctx, id=''):
     txt = f"__**Parties de {board_master.users[discord_id]['username']} en tant que {genrer(board_master.users[discord_id]['genre'],{'m': 'joueur', 'f': 'joueuse', 'n': 'joueu'})}:**__\n"
     for id, p in board_master.parties.items():
         if discord_id in p["joueurs"] and discord_id != p["mj"]:
-            txt += f"**{p['titre']}**, par {board_master.users[p['mj']]['username']}\n"
+            if p['mj'] == "":
+                txt += f"**{p['titre']}**, par ???\n"
+            else:
+                txt += f"**{p['titre']}**, par {board_master.users[p['mj']]['username']}\n"
     await ctx.send(txt)
 
 
