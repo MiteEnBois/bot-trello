@@ -133,7 +133,7 @@ def maj_board():
             board_master.users.pop(u, None)
     if len(all_members) > 0:
         for m in all_members:
-            board_master.users[m.id + "-trello"] = {'mj': None, "trello": m.id, "username": m.username}
+            board_master.users[m.id + "-trello"] = {'genre': 'n', 'mj': None, "trello": m.id, "username": m.username}
             board_master.trello_id[m.id] = m.id + "-trello"
             changes["added"].append(m.username)
     for x in board_master.prevues:
@@ -457,7 +457,7 @@ async def joueur(ctx, id=''):
         print("erreur : id pas trouvée")
         await ctx.send("Vous n'êtes pas présent sur trello, ou vous n'avez pas été lié à votre compte discord. Utilisez t!linktrello")
         return
-    txt = f"__**Parties de {board_master.users[discord_id]['username']} en tant que {genrer(board_master.users[discord_id]['genre'],{'m': 'joueur', 'f': 'joueuse', 'n': 'joueu'})}:**__\n"
+    txt = f"__**Parties de {board_master.users[discord_id]['username']} en tant que {genrer(board_master.users[discord_id]['genre'],{'m': 'joueur', 'f': 'joueuse', 'n': 'joueur·euse'})}:**__\n"
     for id, p in board_master.parties.items():
         if discord_id in p["joueurs"] and discord_id != p["mj"]:
             if p['mj'] == "":
