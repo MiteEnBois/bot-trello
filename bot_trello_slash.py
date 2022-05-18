@@ -439,6 +439,40 @@ async def liste(ctx, id=''):
     await ctx.send(txt)
 
 
+@slash.slash(name="genre",
+             description="Change le genre associé à votre ID.",
+             options=[
+                 create_option(
+                     name="nouveau_genre",
+                     description="h pour homme, f pour femme, n pour neutre",
+                     option_type=3,
+                     required=True
+                 ),
+                 create_option(
+                     name="id",
+                     description="ID si vous cherchez pour quelqu'un d'autre",
+                     option_type=3,
+                     required=False
+                 )
+             ],
+             guild_ids=guild_ids)
+# @bot.command(name='liste', help=help)
+async def joueur(ctx, nouveau_genre, id=''):
+    discord_id = trouve_discord_id(ctx, id)
+    if discord_id not in board_master.users:
+        print("erreur : id pas trouvée")
+        await ctx.send("Vous n'êtes pas présent sur trello, ou vous n'avez pas été lié à votre compte discord. Utilisez t!linktrello")
+        return
+    if nouveau_genre not in ["h", "f", "n"]:
+        print("erreur : mauvais genre")
+        await ctx.send("Veuillez rentrer h, f ou n comme genre, merci")
+        return
+
+    board_master.users[discord_id]["genre"] = nouveau_genre
+    maj_master()
+    await ctx.send(f"Genre bien assigné! {board_master.users[discord_id]['username']} {board_master.users[discord_id]['genre']}")
+
+
 @slash.slash(name="joueur",
              description="Affiche les parties auquelles vous participez en tant que joueur, prévue ou non",
              options=[
@@ -457,6 +491,7 @@ async def joueur(ctx, id=''):
         print("erreur : id pas trouvée")
         await ctx.send("Vous n'êtes pas présent sur trello, ou vous n'avez pas été lié à votre compte discord. Utilisez t!linktrello")
         return
+    i = 0
     txt = f"__**Parties de {board_master.users[discord_id]['username']} en tant que {genrer(board_master.users[discord_id]['genre'],{'m': 'joueur', 'f': 'joueuse', 'n': 'joueur·euse'})}:**__\n"
     for id, p in board_master.parties.items():
         if discord_id in p["joueurs"] and discord_id != p["mj"]:
@@ -464,6 +499,9 @@ async def joueur(ctx, id=''):
                 txt += f"**{p['titre']}**, par ???\n"
             else:
                 txt += f"**{p['titre']}**, par {board_master.users[p['mj']]['username']}\n"
+            i += 1
+    if i == 0:
+        txt = "{board_master.users[discord_id]['username']} n'est joueur dans aucune partie :("
     await ctx.send(txt)
 
 
