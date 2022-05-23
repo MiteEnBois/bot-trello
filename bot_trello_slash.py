@@ -356,8 +356,8 @@ async def pong(ctx):
     await ctx.send("Ping!")
 
 
-@slash.slash(name="mj",
-             description="Affiche les parties dont vous êtes le maitre de jeu",
+@slash.slash(name="mjlong",
+             description="ATTENTION CA ENVOIE BCP DE MESSAGES !! Affiche les details des parties dont vous êtes le maitre de jeu",
              options=[
                  create_option(
                      name="id",
@@ -368,7 +368,7 @@ async def pong(ctx):
              ],
              guild_ids=guild_ids)
 # @bot.command(name='mj', help=help)
-async def mj(ctx, id=""):
+async def mjlong(ctx, id=""):
     discord_id = trouve_discord_id(ctx, id)
     if discord_id not in board_master.users:
         print("erreur : id pas trouvée")
@@ -505,8 +505,8 @@ async def joueur(ctx, id=''):
     await ctx.send(txt)
 
 
-@slash.slash(name="mjcourt",
-             description="Affiche les parties auquelles vous participez en tant que mj, prévue ou non",
+@slash.slash(name="mj",
+             description="Affiche les parties auquelles vous participez en tant que mj",
              options=[
                  create_option(
                      name="id",
@@ -517,7 +517,7 @@ async def joueur(ctx, id=''):
              ],
              guild_ids=guild_ids)
 # @bot.command(name='liste', help=help)
-async def mjcourt(ctx, id=''):
+async def mj(ctx, id=''):
     discord_id = trouve_discord_id(ctx, id)
     if discord_id not in board_master.users:
         print("erreur : id pas trouvée")
