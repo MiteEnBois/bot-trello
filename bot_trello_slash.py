@@ -357,7 +357,7 @@ async def pong(ctx):
 
 
 @slash.slash(name="mjlong",
-             description="ATTENTION CA ENVOIE BCP DE MESSAGES !! Affiche les details des parties dont vous êtes le maitre de jeu",
+             description="ATTENTION CA ENVOIE BCP DE MESSAGES! Affiche les details des parties dont vous êtes le maitre de jeu",
              options=[
                  create_option(
                      name="id",
@@ -457,7 +457,7 @@ async def liste(ctx, id=''):
              ],
              guild_ids=guild_ids)
 # @bot.command(name='liste', help=help)
-async def joueur(ctx, nouveau_genre, id=''):
+async def genre(ctx, nouveau_genre, id=''):
     discord_id = trouve_discord_id(ctx, id)
     if discord_id not in board_master.users:
         print("erreur : id pas trouvée")
@@ -491,7 +491,7 @@ async def joueur(ctx, id=''):
         print("erreur : id pas trouvée")
         await ctx.send("Vous n'êtes pas présent sur trello, ou vous n'avez pas été lié à votre compte discord. Utilisez t!linktrello")
         return
-    i = 0
+    i = True
     txt = f"__**Parties de {board_master.users[discord_id]['username']} en tant que {genrer(board_master.users[discord_id]['genre'],{'m': 'joueur', 'f': 'joueuse', 'n': 'joueur·euse'})}:**__\n"
     for id, p in board_master.parties.items():
         if discord_id in p["joueurs"] and discord_id != p["mj"]:
@@ -499,9 +499,9 @@ async def joueur(ctx, id=''):
                 txt += f"**{p['titre']}**, par ???\n"
             else:
                 txt += f"**{p['titre']}**, par {board_master.users[p['mj']]['username']}\n"
-            i += 1
-    if i == 0:
-        txt = "{board_master.users[discord_id]['username']} n'est joueur dans aucune partie :("
+            i = False
+    if i:
+        txt = f"{board_master.users[discord_id]['username']} n'est {genrer(board_master.users[discord_id]['genre'],{'m': 'joueur', 'f': 'joueuse', 'n': 'joueur·euse'})} dans aucune partie :("
     await ctx.send(txt)
 
 
@@ -523,10 +523,14 @@ async def mj(ctx, id=''):
         print("erreur : id pas trouvée")
         await ctx.send("Vous n'êtes pas présent sur trello, ou vous n'avez pas été lié à votre compte discord. Utilisez t!linktrello")
         return
+    i = True
     txt = f"__**Parties de {board_master.users[discord_id]['username']} en tant que MJ:**__\n"
     for id, p in board_master.parties.items():
         if discord_id == p["mj"]:
             txt += f"**{p['titre']}**, par {board_master.users[p['mj']]['username']}\n"
+            i = False
+    if i:
+        txt = f"{board_master.users[discord_id]['username']} ne maitrise aucune partie :("
     await ctx.send(txt)
 
 
